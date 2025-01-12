@@ -1,0 +1,451 @@
+# Program 1: Implement a perceptron model in Python to simulate the behavior of 
+#an AND gate and OR gate. Use sigmoid activation function and a single perceptron 
+
+import numpy as np
+
+# #######Sigmoid activation function
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
+
+ ########  # Derivative of sigmoid function
+def sigmoid_derivative(x):
+    return x * (1 - x) 
+
+
+X = np.array([[0, 0],
+              [0, 1],
+              [1, 0],
+              [1, 1]])
+
+y = np.array([[0], [0], [0], [1]])
+
+##### Initialize weights and bias
+#np.random.seed(0)  # For reproducibility
+weights = np.random.rand(2, 1)
+bias = np.random.rand(1)
+print("Initial weights:", weights)
+print("Initial bias:", bias)
+
+
+# Training parameters
+learning_rate = 0.01
+epochs = 10000
+
+
+# Testing the AND gate
+print("Testing the AND gate before training:")
+for i in range(len(X)):
+    input_data = X[i]
+    output = sigmoid(np.dot(input_data, weights) + bias)
+    print(f"Input: {input_data}, normarl_output:{output}, Output: {np.round(output)}")
+
+
+# Training loop
+for epoch in range(epochs):
+    # Forward pass
+    input_layer = X
+    weighted_sum = np.dot(input_layer, weights) + bias
+    activated_output = sigmoid(weighted_sum)
+    print(activated_output)
+    # Calculate the error
+    error = y - activated_output
+
+    # Backpropagation
+    adjustment = error * sigmoid_derivative(activated_output)
+    weights += np.dot(input_layer.T, adjustment) * learning_rate
+    bias += np.sum(adjustment) * learning_rate
+
+
+
+
+########### Test the trained model
+print("Final weights:", weights)
+print("Final bias:", bias)
+
+# Testing the AND gate
+print("Testing the AND gate after training:")
+for i in range(len(X)):
+    input_data = X[i]
+    output = sigmoid(np.dot(input_data, weights) + bias)
+    print(f"Input: {input_data}, Output: {np.round(output)}")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import numpy as np
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+
+# Load the Cancer dataset
+data = load_breast_cancer()
+X = data.data
+y = data.target  # 0 (malignant) or 1 (benign)
+
+# Preprocess the data
+# scaler = StandardScaler()
+# X = scaler.fit_transform(X)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Build the neural network model
+activation_function = 'sigmoid'
+
+model = Sequential()
+model.add(Dense(16, input_dim=X_train.shape[1], activation=activation_function))  # Hidden Layer 1
+model.add(Dense(8, activation=activation_function))                              # Hidden Layer 2
+model.add(Dense(1, activation='sigmoid'))                                       # Output Layer
+
+# Compile the model
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+
+# Train the model
+model.fit(X_train, y_train, epochs=50, batch_size=16, verbose=1)
+
+# Evaluate the model
+loss, accuracy = model.evaluate(X_test, y_test, verbose=0)
+print(f"Test Accuracy: {accuracy:.2f}")
+
+# Predict on a single sample
+sample_index = 52
+sample_data = X_test[sample_index].reshape(1, -1)  # Reshape for prediction
+predicted_prob = model.predict(sample_data)[0][0]  # Predict probability
+predicted_class = int(predicted_prob > 0.5)  # Convert probability to binary class
+
+# Show prediction
+print(f"Predicted Probability: {predicted_prob:.2f}")
+if predicted_class == 1:
+    print("The model predicts: BENIGN (No Cancer)")
+else:
+    print("The model predicts: MALIGNANT (Cancer)")
+
+# Show true value for comparison
+print(f"True label: {'BENIGN' if y_test[sample_index] == 1 else 'MALIGNANT'}")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!pip install matplotlib
+import tensorflow as tf
+from tensorflow.keras.layers import Input, Dense
+from tensorflow.keras.models import Model
+from tensorflow.keras.datasets import mnist
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Load MNIST dataset
+(x_train, _), (x_test, _) = mnist.load_data()
+x_train = x_train.astype('float32') / 255.0
+x_test = x_test.astype('float32') / 255.0
+x_train = x_train.reshape(-1, 784)
+x_test = x_test.reshape(-1, 784)
+
+# Set encoding dimension
+encoding_dim = 64
+
+# Define encoder model
+input_img = Input(shape=(784,))
+encoded = Dense(256, activation='relu')(input_img)
+encoded = Dense(128, activation='relu')(encoded)
+encoded = Dense(encoding_dim, activation='relu')(encoded)
+
+# Define decoder model
+decoded = Dense(128, activation='relu')(encoded)
+decoded = Dense(256, activation='relu')(decoded)
+decoded = Dense(784, activation='sigmoid')(decoded)
+
+# Define autoencoder model
+autoencoder = Model(input_img, decoded)
+
+# Compile model
+autoencoder.compile(optimizer='adam', loss='mse')
+
+# Train model
+autoencoder.fit(
+    x_train, x_train,
+    epochs=50,
+    batch_size=256,
+    shuffle=True,
+    validation_data=(x_test, x_test)
+)
+
+# Create the encoder model
+encoder = Model(input_img, encoded)
+
+# Get the encoded representations of the test data
+encoded_imgs = encoder.predict(x_test)
+
+# Choose an image index to display
+index = 0 # Change this to any index in the x_test dataset (0 to 9999)
+
+# Get the encoded (reduced) representation for the chosen image
+encoded_image = encoded_imgs[index]
+
+# Reshape the encoded 64-dimensional vector into an 8x8 grid (since encoding_dim=64)
+encoded_image_reshaped = encoded_image.reshape(8, 8)
+
+# Choose number of images to display
+n = 10  # Number of images to display
+
+# Optionally, check the shape of the original images as well
+print("Shape of original images:", x_test.shape)
+
+# Check the dimensions of the encoded representations
+print("Shape of encoded representations:", encoded_imgs.shape)
+
+# Print the number of reduced features
+num_reduced_features = encoded_imgs.shape[1]
+print("Number of reduced features:", num_reduced_features)
+
+plt.figure(figsize=(20, 6))
+
+for i in range(n):
+    # Display original image
+    ax = plt.subplot(3, n, i + 1)
+    plt.imshow(x_test[i].reshape(28, 28))
+    plt.title("Original")
+    plt.gray()
+    ax.axis('off')
+
+    # Display encoded image (latent space representation)
+    ax = plt.subplot(3, n, i + 1 + 2 * n)
+    encoded_image = encoded_imgs[i].reshape(8, 8)  # Reshape to 8x8 for visualization
+    plt.imshow(encoded_image)
+    plt.title(f"Encoded {i}")
+    plt.gray()
+    ax.axis('off')
+
+    # Display reconstruction (predicted image)
+    ax = plt.subplot(3, n, i + 1 + n)
+    plt.imshow(autoencoder.predict(x_test[i].reshape(1, 784)).reshape(28, 28))
+    plt.title("Predicted")
+    ax.axis('off')
+
+plt.tight_layout()
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout, BatchNormalization
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.optimizers import Adam
+# Load CIFAR-10 data
+(x_train, y_train), (x_test, y_test) = cifar10.load_data()
+
+# Normalize pixel values to the range 0-1
+x_train, x_test = x_train / 255.0, x_test / 255.0
+
+# One-hot encode labels
+y_train = to_categorical(y_train, 10)
+y_test = to_categorical(y_test, 10)
+
+def build_cnn(input_shape, num_classes):
+    model = models.Sequential([
+        layers.Conv2D(32, (3, 3), activation='relu', input_shape=input_shape),
+        layers.MaxPooling2D((2, 2)),
+
+        layers.Conv2D(64, (3, 3), activation='relu'),
+        layers.MaxPooling2D((2, 2)),
+
+        layers.Conv2D(128, (3, 3), activation='relu'),
+        layers.Flatten(),
+
+        layers.Dense(128, activation='relu'),
+        layers.Dropout(0.5),
+        layers.Dense(num_classes, activation='softmax')
+    ])
+    return model
+
+
+# Build and compile the CNN
+cnn = build_cnn((32, 32, 3), 10)
+cnn.compile(optimizer='adam',
+            loss='categorical_crossentropy',
+            metrics=['accuracy'])
+
+
+# Train the CNN on CIFAR-10
+history = cnn.fit(x_train, y_train, epochs=15, batch_size=64, validation_data=(x_test, y_test))
+
+# Evaluate on the test data
+test_loss, test_acc = cnn.evaluate(x_test, y_test)
+print(f"CIFAR-10 Test Accuracy: {test_acc:.2f}")
+
+# Load CIFAR-100 dataset
+(x_train, y_train), (x_test, y_test) = tf.keras.datasets.cifar100.load_data()
+
+# Normalize data
+x_train = x_train.astype('float32') / 255.0
+x_test = x_test.astype('float32') / 255.0
+
+# One-hot encode labels
+y_train = tf.keras.utils.to_categorical(y_train, 100)
+y_test = tf.keras.utils.to_categorical(y_test, 100)
+
+# Data Augmentation
+datagen = ImageDataGenerator(
+    rotation_range=15,
+    width_shift_range=0.1,
+    height_shift_range=0.1,
+    horizontal_flip=True
+)
+datagen.fit(x_train)
+
+# Build the model
+model = Sequential([
+    Conv2D(64, (3, 3), activation='relu', padding='same', input_shape=x_train.shape[1:]),
+    BatchNormalization(),
+    Conv2D(64, (3, 3), activation='relu', padding='same'),
+    BatchNormalization(),
+    MaxPooling2D((2, 2)),
+    Dropout(0.25),
+
+    Conv2D(128, (3, 3), activation='relu', padding='same'),
+    BatchNormalization(),
+    Conv2D(128, (3, 3), activation='relu', padding='same'),
+    BatchNormalization(),
+    MaxPooling2D((2, 2)),
+    Dropout(0.25),
+
+    Conv2D(256, (3, 3), activation='relu', padding='same'),
+    BatchNormalization(),
+    Conv2D(256, (3, 3), activation='relu', padding='same'),
+    BatchNormalization(),
+    MaxPooling2D((2, 2)),
+    Dropout(0.25),
+
+    Flatten(),
+    Dense(512, activation='relu'),
+    BatchNormalization(),
+    Dropout(0.5),
+    Dense(100, activation='softmax')
+])
+
+# Compile the model
+model.compile(
+    optimizer=Adam(learning_rate=0.001),
+    loss='categorical_crossentropy',
+    metrics=['accuracy']
+)
+
+# Train the model
+batch_size = 64
+epochs = 100
+history = model.fit(
+    datagen.flow(x_train, y_train, batch_size=batch_size),
+    steps_per_epoch=x_train.shape[0] // batch_size,
+    validation_data=(x_test, y_test),
+    epochs=epochs,
+    verbose=1
+)
+
+# Evaluate the model
+test_loss, test_acc = model.evaluate(x_test, y_test, verbose=2)
+print(f"Test Accuracy: {test_acc * 100:.2f}%")
+
+
+
+
+
+
+
+
+# Install the required library
+!pip install datasets
+
+from datasets import load_dataset
+
+import numpy as np
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense, Embedding
+from tensorflow.keras.optimizers import Adam
+
+dataset = load_dataset("wikitext", "wikitext-2-raw-v1", split="train")
+text_data = "\n".join(dataset["text"][:1000]).lower()
+
+# Tokenize the text
+tokenizer = Tokenizer()
+tokenizer.fit_on_texts([text_data])
+total_words = len(tokenizer.word_index) + 1  # Adding 1 for padding
+
+# Prepare sequences and labels
+input_sequences = []
+for line in text_data.split('\n'):
+    token_list = tokenizer.texts_to_sequences([line])[0]
+    for i in range(1, len(token_list)):
+        input_sequences.append(token_list[:i + 1])
+
+max_sequence_length = max([len(seq) for seq in input_sequences])
+input_sequences = pad_sequences(input_sequences, 
+                                 maxlen=max_sequence_length, 
+                                 padding='pre')
+
+# Separate predictors and labels
+X, y = input_sequences[:, :-1], input_sequences[:, -1]
+
+# Build the model
+model = Sequential([
+    Embedding(total_words, 100, input_length=max_sequence_length - 1),
+    LSTM(150, return_sequences=True),
+    LSTM(100),
+    Dense(total_words, activation='softmax')
+])
+model.compile(loss='sparse_categorical_crossentropy', 
+              optimizer=Adam(), 
+              metrics=['accuracy'])
+
+# Train the model
+model.fit(X, y, epochs=2, batch_size=32, verbose=1)
+
+# Function to predict the next word
+def predict_next_word(model, input_text, tokenizer, max_sequence_length):
+    input_sequence = tokenizer.texts_to_sequences([input_text])[0]
+    input_sequence = pad_sequences([input_sequence], 
+                                    maxlen=max_sequence_length - 1, 
+                                    padding='pre')
+    predicted_word_index = np.argmax(model.predict(input_sequence), axis=1)[0]
+    return tokenizer.index_word.get(predicted_word_index, "<unknown>")
+
+# Example usage
+input_text = "The weather is"
+predicted_word = predict_next_word(model, input_text, tokenizer, max_sequence_length)
+print(f"Predicted next word: {predicted_word}")
+
+# Evaluate model accuracy
+train_loss, train_accuracy = model.evaluate(X, y, verbose=0)
+print(f"Training Accuracy: {train_accuracy:.2f}")
